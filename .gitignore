@@ -14,3 +14,12 @@ __pycache__/
 # 시스템 파일
 .DS_Store
 Thumbs.db
+
+# 문서파일
+*.pptx
+*.ppt
+*.docx
+*.doc
+*.pdf
+*.xlsx
+*.xls
