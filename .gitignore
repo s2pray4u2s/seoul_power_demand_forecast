@@ -21,3 +21,6 @@ Thumbs.db
 *.docx
 *.doc
 *.pdf
+
+# 이 파일만 예외
+!11th_power_supply_plan.pdf
