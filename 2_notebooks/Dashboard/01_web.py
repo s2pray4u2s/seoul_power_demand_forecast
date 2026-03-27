@@ -209,8 +209,19 @@ calc_mape = np.mean(np.abs((df_2024['전력사용량(MWh)'] - df_2024['예측값
 calc_rmse = np.sqrt(np.mean((df_2024['전력사용량(MWh)'] - df_2024['예측값(MWh)'])**2))
 
 # ==========================================
-# 4. 사이드바
+# 4. 사이드바 (에러 완벽 해결 버전)
 # ==========================================
+
+# 1. 초기 세션 상태 설정 (최초 실행 시 한 번만)
+if 's_temp' not in st.session_state: st.session_state.s_temp = 25.0
+if 's_hum' not in st.session_state: st.session_state.s_hum = 50
+if 's_wind' not in st.session_state: st.session_state.s_wind = 2.0
+if 's_hour' not in st.session_state: st.session_state.s_hour = 14
+
+# 2. 동기화 콜백 함수
+def sync_val(src_key, dst_key):
+    st.session_state[dst_key] = st.session_state[src_key]
+
 st.sidebar.markdown("### 📋 관제 메뉴")
 page = st.sidebar.radio(
     "메뉴를 선택하세요",
@@ -221,33 +232,64 @@ page = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.header("🌡️ 기상 시나리오 설정")
 
+# --- 기온 (Temp) ---
 st.sidebar.write("예상 기온 (°C)")
-c1_temp, c2_temp = st.sidebar.columns([7, 3])
-with c1_temp:
-    temp_slider = st.slider("temp_slider_label", -10.0, 40.0, 25.0, 0.5, label_visibility="collapsed")
-with c2_temp:
-    s_temp = st.number_input("temp_input", -10.0, 40.0, value=temp_slider, step=0.5, label_visibility="collapsed")
+c1, c2 = st.sidebar.columns([7, 3])
+with c1:
+    # 핵심: value 파라미터 대신 세션 스테이트를 직접 업데이트 후 위젯 호출
+    st.session_state['t_slider_key'] = st.session_state.s_temp
+    st.slider("t_slider", -10.0, 40.0, key="t_slider_key", 
+              on_change=sync_val, args=("t_slider_key", "s_temp"), 
+              label_visibility="collapsed")
+with c2:
+    st.number_input("t_input", -10.0, 40.0, key="s_temp", 
+                    on_change=sync_val, args=("s_temp", "t_slider_key"),
+                    step=0.5, label_visibility="collapsed")
 
+# --- 습도 (Hum) ---
 st.sidebar.write("예상 습도 (%)")
-c1_hum, c2_hum = st.sidebar.columns([7, 3])
-with c1_hum:
-    hum_slider = st.slider("hum_slider_label", 0, 100, 50, 5, label_visibility="collapsed")
-with c2_hum:
-    s_hum = st.number_input("hum_input", 0, 100, value=hum_slider, step=5, label_visibility="collapsed")
+c1, c2 = st.sidebar.columns([7, 3])
+with c1:
+    st.session_state['h_slider_key'] = st.session_state.s_hum
+    st.slider("h_slider", 0, 100, key="h_slider_key", 
+              on_change=sync_val, args=("h_slider_key", "s_hum"), 
+              label_visibility="collapsed")
+with c2:
+    st.number_input("h_input", 0, 100, key="s_hum", 
+                    on_change=sync_val, args=("s_hum", "h_slider_key"),
+                    step=5, label_visibility="collapsed")
 
+# --- 풍속 (Wind) ---
 st.sidebar.write("예상 풍속 (m/s)")
-c1_wind, c2_wind = st.sidebar.columns([7, 3])
-with c1_wind:
-    wind_slider = st.slider("wind_slider_label", 0.0, 15.0, 2.0, 0.5, label_visibility="collapsed")
-with c2_wind:
-    s_wind = st.number_input("wind_input", 0.0, 15.0, value=wind_slider, step=0.5, label_visibility="collapsed")
+c1, c2 = st.sidebar.columns([7, 3])
+with c1:
+    st.session_state['w_slider_key'] = st.session_state.s_wind
+    st.slider("w_slider", 0.0, 15.0, key="w_slider_key", 
+              on_change=sync_val, args=("w_slider_key", "s_wind"), 
+              label_visibility="collapsed")
+with c2:
+    st.number_input("w_input", 0.0, 15.0, key="s_wind", 
+                    on_change=sync_val, args=("s_wind", "w_slider_key"),
+                    step=0.1, label_visibility="collapsed")
 
+# --- 시간 (Hour) ---
 st.sidebar.write("예상 시간 (시)")
-c1_hour, c2_hour = st.sidebar.columns([7, 3])
-with c1_hour:
-    hour_slider = st.slider("hour_slider_label", 0, 23, 14, 1, label_visibility="collapsed")
-with c2_hour:
-    s_hour = st.number_input("hour_input", 0, 23, value=hour_slider, step=1, label_visibility="collapsed")
+c1, c2 = st.sidebar.columns([7, 3])
+with c1:
+    st.session_state['hr_slider_key'] = st.session_state.s_hour
+    st.slider("hr_slider", 0, 23, key="hr_slider_key", 
+              on_change=sync_val, args=("hr_slider_key", "s_hour"), 
+              label_visibility="collapsed")
+with c2:
+    st.number_input("hr_input", 0, 23, key="s_hour", 
+                    on_change=sync_val, args=("s_hour", "hr_slider_key"),
+                    step=1, label_visibility="collapsed")
+
+# 최종 변수 할당 (이후 예측 로직에서 사용)
+s_temp = st.session_state.s_temp
+s_hum = st.session_state.s_hum
+s_wind = st.session_state.s_wind
+s_hour = st.session_state.s_hour
 
 now          = datetime.datetime.now()
 s_month      = now.month
